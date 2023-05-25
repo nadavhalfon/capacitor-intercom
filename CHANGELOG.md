@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [4.3.1](https://github.com/Fiksuruoka-fi/capacitor-intercom/compare/v4.3.0...v4.3.1) (2023-05-25)
+
+
+### Bug Fixes
+
+* **ios:** hmac typo ([20f3cce](https://github.com/Fiksuruoka-fi/capacitor-intercom/commit/20f3cce758a1ff346359d48c2b1cda9e00f4bdc9))
+
 ## [4.3.0](https://github.com/Fiksuruoka-fi/capacitor-intercom/compare/v4.2.2...v4.3.0) (2023-05-05)
 
 
