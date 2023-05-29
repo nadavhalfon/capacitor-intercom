@@ -10,9 +10,7 @@ import com.getcapacitor.PluginCall;
 import com.getcapacitor.PluginMethod;
 import com.getcapacitor.annotation.CapacitorPlugin;
 import com.getcapacitor.annotation.Permission;
-
-import org.json.JSONException;
-
+import io.intercom.android.BuildConfig;
 import io.intercom.android.sdk.Company;
 import io.intercom.android.sdk.Intercom;
 import io.intercom.android.sdk.IntercomContent;
@@ -33,13 +31,19 @@ import java.util.Map;
 public class IntercomPlugin extends Plugin implements UnreadConversationCountListener {
 
     private final IntercomPushClient intercomPushClient = new IntercomPushClient();
+    private String appId = "NO_APP_ID_PASSED";
+    private String apiKey = "NO_API_KEY_PASSED";
 
     @Override
     public void load() {
-        // Set up Intercom
-        setUpIntercom();
+        try {
+            CapConfig config = this.bridge.getConfig();
+            appId = config.getPluginConfiguration("Intercom").getString("androidAppId", "NO_APP_ID_PASSED");
+            apiKey = config.getPluginConfiguration("Intercom").getString("androidApiKey", "NO_API_KEY_PASSED");
+            setupIntercom();
+            super.load();
+        } catch (Exception ignored) {}
 
-        // load parent
         super.load();
     }
 
@@ -47,14 +51,27 @@ public class IntercomPlugin extends Plugin implements UnreadConversationCountLis
     public void handleOnStart() {
         super.handleOnStart();
         bridge
-                .getActivity()
-                .runOnUiThread(
-                        () -> {
-                            //We also initialize intercom here just in case it has died. If Intercom is already set up, this won't do anything.
-                            setUpIntercom();
-                            Intercom.client().handlePushMessage();
-                        }
-                );
+            .getActivity()
+            .runOnUiThread(
+                () -> {
+                    try {
+                        setupIntercom();
+                        Intercom.client().handlePushMessage();
+                    } catch (Exception ignored) {}
+                }
+            );
+    }
+
+    @PluginMethod
+    public void loadWithKeys(PluginCall call) {
+        try {
+            appId = call.getString("appId", "NO_APP_ID_PASSED");
+            apiKey = call.getString("androidApiKey", "NO_API_KEY_PASSED");
+            setupIntercom();
+            call.resolve();
+        } catch (Exception e) {
+            call.reject(e.getMessage());
+        }
     }
 
     @PluginMethod
@@ -447,17 +464,26 @@ public class IntercomPlugin extends Plugin implements UnreadConversationCountLis
         notifyListeners("updateUnreadCount", ret);
     }
 
-    private void setUpIntercom() {
+    private void setupIntercom() throws Exception {
         try {
-            // get config
-            CapConfig config = this.bridge.getConfig();
-            String apiKey = config.getPluginConfiguration("Intercom").getString("androidApiKey");
-            String appId = config.getPluginConfiguration("Intercom").getString("androidAppId");
+            if (appId.equals("NO_APP_ID_PASSED")) {
+                throw new Exception("App ID missing");
+            }
 
-            // init intercom sdk
+            if (apiKey.equals("NO_API_KEY_PASSED")) {
+                throw new Exception("API Key missing");
+            }
+
             Intercom.initialize(this.getActivity().getApplication(), apiKey, appId);
+
+            if (BuildConfig.DEBUG) {
+                Intercom.setLogLevel(Intercom.LogLevel.DEBUG);
+            } else {
+                Intercom.setLogLevel(Intercom.LogLevel.DISABLED);
+            }
         } catch (Exception e) {
-            Logger.error("Intercom", "ERROR: Something went wrong when initializing Intercom. Check your configurations", e);
+            Logger.warn("Intercom", "Something went wrong when initializing Intercom. Check your configurations. " + e.getMessage());
+            throw e;
         }
     }
 
