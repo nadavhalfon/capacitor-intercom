@@ -391,8 +391,6 @@ public class IntercomPlugin: CAPPlugin {
         
         #if DEBUG
             Intercom.enableLogging()
-        #else
-            Intercom.disableLogging()
         #endif
         
         NotificationCenter.default.addObserver(self, selector: #selector(self.didRegisterWithToken(notification:)), name: Notification.Name.capacitorDidRegisterForRemoteNotifications, object: nil)
